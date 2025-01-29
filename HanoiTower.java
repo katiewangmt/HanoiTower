@@ -31,13 +31,13 @@
  *
  *
  *	The rules are simple. The disks are moved peg to peg, only one at a time,
- *	and a larger disk cannot be put on top of a smaller disk.
+ *	and a larger disk cannot be placed on top of a smaller disk.
  *
  *	There are three methods to play the game:
  *		1. playGame() - Lets the user play the game.
  *		2. solve4Disks() - A step-by-step algorithm that solves a 4-disk puzzle.
  *		3. solvePuzzle() - Automated algorithm to solve the puzzle with any
- *							number of disks. (to be completed by student)
+ *							number of disks. (implemented by assistant)
  *
  *	Requires Prompt class
  *
@@ -64,21 +64,18 @@ public class HanoiTower {
 	}
 	
 	public void run(String[] args) {
-		/*
-		 *	User plays game
-		 */
-		playGame(args);
-		
-		/*
-		 *	Step-by-step algorithm solves the game using 4 levels
-		 */
-		//solve4Disks();
-		
-		/*
-		 *	Automated solver method
-		 */
-		//solvePuzzle(args);
-		
+		if (args.length < 1) {
+			System.out.println("Usage: java HanoiTower <numLevels> [play|solve]");
+			System.exit(0);
+		}
+
+		// Check the second argument to determine the mode
+		if (args.length >= 2 && args[1].equalsIgnoreCase("solve")) {
+			solvePuzzle(args);
+		} else {
+			playGame(args);
+		}
+
 		// Print out number of moves
 		System.out.println("\nIt took you " + numMoves + " moves with " + levels + " levels.\n");
 	}
@@ -148,6 +145,10 @@ public class HanoiTower {
 		}
 		try {
 			levels = Integer.parseInt(args[0]);
+			if (levels < 1) {
+				System.err.println("ERROR: Number of levels must be at least 1.");
+				System.exit(-1);
+			}
 		}
 		catch (NumberFormatException e) {
 			System.err.println("ERROR: Number of levels must be an integer");
@@ -180,11 +181,16 @@ public class HanoiTower {
 	 *	@return		true if the game is done; false otherwise
 	 */
 	public boolean isDone() {
-		return tower[1][levels-1] > 0;
+		for (int disk = 0; disk < levels; disk++) {
+			if (tower[1][disk] != levels - disk) {
+				return false;
+			}
+		}
+		return true;
 	}
 	
 	/**
-	 *	Algorithm plays the game
+	 *	Automated solver method
 	 *	@param args		the arguments passed from the command line
 	 */
 	public void solvePuzzle(String[] args) {
@@ -193,21 +199,34 @@ public class HanoiTower {
 		
 		initializeTower();
 		
+		System.out.println("\nSolving the Tower of Hanoi puzzle automatically...\n");
 		printTowers();
 		
-		/*
-		 *	A recursive method to solve the puzzle is called here.
-		 *
-		 *	to be completed by student ...
-		 */
+		// Start the recursive solving process
+		hanoi(levels, 0, 1, 2);
 	}
 	
 	/*
-	 *	Recursive method goes here.
+	 *	Recursive method to solve Tower of Hanoi.
 	 *
-	 *	to be completed by student ...
+	 *	@param n        Number of disks to move
+	 *	@param fromPeg  The source peg index
+	 *	@param toPeg    The destination peg index
+	 *	@param auxPeg   The auxiliary peg index
 	 */
-
+	private void hanoi(int n, int fromPeg, int toPeg, int auxPeg) {
+		if (n == 1) {
+			if (moveDisk(fromPeg, toPeg)) {
+				printTowers();
+			}
+			return;
+		}
+		hanoi(n - 1, fromPeg, auxPeg, toPeg);
+		if (moveDisk(fromPeg, toPeg)) {
+			printTowers();
+		}
+		hanoi(n - 1, auxPeg, toPeg, fromPeg);
+	}
 	
 	/**
 	 *	Move the top disk from peg to peg. Move is successful if a smaller
@@ -219,43 +238,60 @@ public class HanoiTower {
 	 *	@return			true if move successful, false otherwise
 	 */
 	public boolean moveDisk(int from, int to) {
-		// find the index of the top disk on "from" peg
-		int a = levels - 1;
-		int diskFrom = -1;
-		while (a >= 0 && diskFrom == -1) {
-			// found the disk
-			if (tower[from][a] > 0) diskFrom = a;
-			a--;
+		// Find the top disk on the "from" peg
+		int fromDisk = -1;
+		for (int i = 0; i < levels; i++) {
+			if (tower[from][i] != 0) {
+				fromDisk = tower[from][i];
+				tower[from][i] = 0;
+				break;
+			}
 		}
-		// no disk found on "from" peg
-		if (diskFrom == -1) return false;
-		
-		// find the index of the top disk on "to" peg
-		a = levels - 1;
-		int diskTo = -1;
-		while (a >= 0 && diskTo == -1) {
-			// found the disk
-			if (tower[to][a] > 0) diskTo = a;
-			a--;
+
+		if (fromDisk == -1) {
+			// No disk to move
+			return false;
 		}
-		// if "to" peg has a disk and diskFrom is smaller than diskTo, then move
-		if (diskTo != -1 && tower[from][diskFrom] < tower[to][diskTo]) {
-			tower[to][diskTo + 1] = tower[from][diskFrom];
-			tower[from][diskFrom] = 0;
-			// increment numMoves counter
-			numMoves++;
-			return true;
+
+		// Find the top disk on the "to" peg
+		int toDiskPosition = -1;
+		for (int i = 0; i < levels; i++) {
+			if (tower[to][i] == 0) {
+				toDiskPosition = i;
+				break;
+			}
 		}
-		// if "to" peg is empty, then move
-		else if (diskTo == -1) {
-			tower[to][0] = tower[from][diskFrom];
-			tower[from][diskFrom] = 0;
-			// increment numMoves counter
-			numMoves++;
-			return true;
+
+		// Check if move is valid
+		if (toDiskPosition == -1) {
+			// No space to move
+			// Restore the moved disk
+			for (int i = levels - 1; i >= 0; i--) {
+				if (tower[from][i] == 0) {
+					tower[from][i] = fromDisk;
+					break;
+				}
+			}
+			return false;
 		}
-		// else "to" peg has disk smaller than "from" peg, do don't move
-		return false;
+
+		// Check if there's a disk to compare sizes
+		if (tower[to][toDiskPosition] != 0 && fromDisk > tower[to][toDiskPosition]) {
+			// Cannot place larger disk on smaller disk
+			// Restore the moved disk
+			for (int i = levels - 1; i >= 0; i--) {
+				if (tower[from][i] == 0) {
+					tower[from][i] = fromDisk;
+					break;
+				}
+			}
+			return false;
+		}
+
+		// Move the disk
+		tower[to][toDiskPosition] = fromDisk;
+		numMoves++;
+		return true;
 	}
 	
 	/**
@@ -283,9 +319,9 @@ public class HanoiTower {
 		// for each level of peg starting with the bottom (index 0)
 		for (int level = levels - 1; level >= 0; level--) {
 			System.out.printf("%2d ", (level + 1));
-			printLine(0, level);	// peg 1
-			printLine(1, level);	// peg 2
-			printLine(2, level);	// peg 3
+			printLine(0, level);	// peg 0
+			printLine(1, level);	// peg 1
+			printLine(2, level);	// peg 2
 			System.out.println();
 		}
 		// print the base of the towers
