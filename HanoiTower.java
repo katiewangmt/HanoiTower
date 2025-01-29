@@ -46,7 +46,7 @@
  */
 public class HanoiTower {
 	
-	private int [][] tower;	// rows = pegs; cols = disk number 1 to levels
+	private int [][] tower;	// rows = pegs; cols = disk number 0 to levels-1
 	private int levels;		// number of disks or levels to move
 	private int numMoves;	// total number of moves
 	
@@ -238,60 +238,43 @@ public class HanoiTower {
 	 *	@return			true if move successful, false otherwise
 	 */
 	public boolean moveDisk(int from, int to) {
-		// Find the top disk on the "from" peg
-		int fromDisk = -1;
-		for (int i = 0; i < levels; i++) {
-			if (tower[from][i] != 0) {
-				fromDisk = tower[from][i];
-				tower[from][i] = 0;
-				break;
-			}
+		// find the index of the top disk on "from" peg
+		int a = levels - 1;
+		int diskFrom = -1;
+		while (a >= 0 && diskFrom == -1) {
+			// found the disk
+			if (tower[from][a] > 0) diskFrom = a;
+			a--;
 		}
-
-		if (fromDisk == -1) {
-			// No disk to move
-			return false;
+		// no disk found on "from" peg
+		if (diskFrom == -1) return false;
+		
+		// find the index of the top disk on "to" peg
+		a = levels - 1;
+		int diskTo = -1;
+		while (a >= 0 && diskTo == -1) {
+			// found the disk
+			if (tower[to][a] > 0) diskTo = a;
+			a--;
 		}
-
-		// Find the top disk on the "to" peg
-		int toDiskPosition = -1;
-		for (int i = 0; i < levels; i++) {
-			if (tower[to][i] == 0) {
-				toDiskPosition = i;
-				break;
-			}
+		// if "to" peg has a disk and diskFrom is smaller than diskTo, then move
+		if (diskTo != -1 && tower[from][diskFrom] < tower[to][diskTo]) {
+			tower[to][diskTo + 1] = tower[from][diskFrom];
+			tower[from][diskFrom] = 0;
+			// increment numMoves counter
+			numMoves++;
+			return true;
 		}
-
-		// Check if move is valid
-		if (toDiskPosition == -1) {
-			// No space to move
-			// Restore the moved disk
-			for (int i = levels - 1; i >= 0; i--) {
-				if (tower[from][i] == 0) {
-					tower[from][i] = fromDisk;
-					break;
-				}
-			}
-			return false;
+		// if "to" peg is empty, then move
+		else if (diskTo == -1) {
+			tower[to][0] = tower[from][diskFrom];
+			tower[from][diskFrom] = 0;
+			// increment numMoves counter
+			numMoves++;
+			return true;
 		}
-
-		// Check if there's a disk to compare sizes
-		if (tower[to][toDiskPosition] != 0 && fromDisk > tower[to][toDiskPosition]) {
-			// Cannot place larger disk on smaller disk
-			// Restore the moved disk
-			for (int i = levels - 1; i >= 0; i--) {
-				if (tower[from][i] == 0) {
-					tower[from][i] = fromDisk;
-					break;
-				}
-			}
-			return false;
-		}
-
-		// Move the disk
-		tower[to][toDiskPosition] = fromDisk;
-		numMoves++;
-		return true;
+		// else "to" peg has disk smaller than "from" peg, do don't move
+		return false;
 	}
 	
 	/**
@@ -316,7 +299,7 @@ public class HanoiTower {
 	 */
 	public void printTowers() {
 		System.out.println("\nLevel");
-		// for each level of peg starting with the bottom (index 0)
+		// for each level of peg starting with the top (highest index)
 		for (int level = levels - 1; level >= 0; level--) {
 			System.out.printf("%2d ", (level + 1));
 			printLine(0, level);	// peg 0
@@ -362,18 +345,19 @@ public class HanoiTower {
 	 */
 	public void printLine(int peg, int level) {
 		/*
-			Print peg one (index 0) at level
+			Print peg at the given level
 		*/
-		// print empty spaces for left side of disk
-		printChar(levels - tower[peg][level] + 1, " ");
-		// print left side of disk
+		// Calculate the number of spaces for padding
+		int padding = levels - tower[peg][level] + 1;
+		printChar(padding, " ");
+		// Print the left side of the disk
 		printDisk(tower[peg][level]);
-		// print peg
+		// Print the peg
 		System.out.print("|");
-		// print right side of disk
+		// Print the right side of the disk
 		printDisk(tower[peg][level]);
-		// print empty spaces for right side of disk
-		printChar(levels - tower[peg][level] + 1, " ");
+		// Print the right padding
+		printChar(padding, " ");
 	}
 	
 	/**
