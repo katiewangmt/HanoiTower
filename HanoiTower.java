@@ -73,7 +73,7 @@ public class HanoiTower {
 		if (args.length >= 2 && args[1].equalsIgnoreCase("solve")) {
 			solvePuzzle(args);
 		} else {
-			playGame(args);
+			//playGame(args);
 		}
 
 		// Print out number of moves
